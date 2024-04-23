@@ -124,7 +124,7 @@ describe("PDAs", async () => {
       true
     );
 
-    await mintTo(
+    let mintSig = await mintTo(
       provider.connection,
       payer.payer,
       mint,
@@ -132,6 +132,8 @@ describe("PDAs", async () => {
       payer.payer,
       100
     );
+
+    await getTxDetails(provider, mintSig);
 
     return {
       mint
@@ -161,10 +163,11 @@ describe("PDAs", async () => {
   });
 
   it("Claims token and try reclaim", async () => {
+  
+    let setupResult = await setup();
+
     costTracker.track("pre receiver claim", receiver.publicKey);
     costTracker.track("pre authority claim", authority.publicKey);
-
-    let setupResult = await setup();
 
     const createTokenClaimTx = await tokenClaim.getClaimInstruction(
       provider.connection,

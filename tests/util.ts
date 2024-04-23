@@ -30,9 +30,7 @@ export class CostTracker {
       for (const item of this.costsTracker[key]) {
         if (previousBalance) {
           let diff = previousBalance - item.balance;
-          if (diff > 0) {
-            console.log(`${key}: ${item.text}: ${diff / LAMPORTS_PER_SOL} SOL`);
-          }
+          console.log(`${key}: ${item.text}: ${diff / LAMPORTS_PER_SOL} SOL`);
           totalCosts += diff;
         }
         previousBalance = item.balance;
