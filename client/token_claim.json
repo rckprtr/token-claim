@@ -1,0 +1,279 @@
+{
+  "address": "GKjhT8AoKvdvoi6X9U4cKFQo4RCFNotSwvhzDm8FwA6t",
+  "metadata": {
+    "name": "token_claim",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "claim_status",
+      "discriminator": [
+        163,
+        116,
+        227,
+        12,
+        82,
+        242,
+        47,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "authority"
+        },
+        {
+          "name": "token_claims",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "ClaimStatusResult"
+        }
+      }
+    },
+    {
+      "name": "claim_token",
+      "discriminator": [
+        116,
+        206,
+        27,
+        191,
+        166,
+        19,
+        0,
+        73
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "receiver",
+          "signer": true
+        },
+        {
+          "name": "token_claims",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "token_claims_token_account",
+          "writable": true
+        },
+        {
+          "name": "receiver_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "Solana ecosystem accounts"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_token_claims",
+      "discriminator": [
+        150,
+        187,
+        197,
+        115,
+        76,
+        130,
+        243,
+        197
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_claims",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "TokenClaims",
+      "discriminator": [
+        22,
+        174,
+        172,
+        219,
+        220,
+        175,
+        47,
+        120
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NonceAlreadyClaimed",
+      "msg": "Nonce Claimed: Token already claimed"
+    },
+    {
+      "code": 6001,
+      "name": "Unauthorized",
+      "msg": "Unauthorized: User is not the authority"
+    }
+  ],
+  "types": [
+    {
+      "name": "ClaimStatusResult",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Claimed"
+          },
+          {
+            "name": "Unclaimed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenClaims",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bitmap",
+            "type": {
+              "array": [
+                "u8",
+                512
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
