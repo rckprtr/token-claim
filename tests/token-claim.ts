@@ -83,12 +83,13 @@ describe("PDAs", async () => {
   const receiver = anchor.web3.Keypair.generate();
   const authority = anchor.web3.Keypair.generate();
 
-  const [tokenClaimsPDA] = PublicKey.findProgramAddressSync(
-    [Buffer.from("token_claims"), authority.publicKey.toBuffer()],
-    program.programId
-  );
+  const campaignId = 0;
+
+  const tokenClaim = new TokenClaimClient();
+  const tokenClaimsPDA = tokenClaim.createTokenClaimPDA(campaignId, authority.publicKey);
 
   const costTracker = new CostTracker(provider.connection);
+
 
   before(async () => {
     let sig = await provider.connection.requestAirdrop(
@@ -140,8 +141,8 @@ describe("PDAs", async () => {
   it("Create the token claim PDA", async () => {
     costTracker.track("pre authority create", authority.publicKey);
 
-    const tokenClaim = new TokenClaimClient();
     const createTokenClaimTx = await tokenClaim.getCreateInstruction(
+      campaignId,
       authority.publicKey
     );
 
@@ -165,9 +166,9 @@ describe("PDAs", async () => {
 
     let setupResult = await setup();
 
-    const tokenClaim = new TokenClaimClient();
     const createTokenClaimTx = await tokenClaim.getClaimInstruction(
       provider.connection,
+      campaignId,
       authority.publicKey,
       setupResult.mint,
       receiver.publicKey,
@@ -182,7 +183,9 @@ describe("PDAs", async () => {
     );
     versionedTx.sign([receiver, authority]);
 
-    let sig = await provider.connection.sendTransaction(versionedTx);
+    let sig = await provider.connection.sendTransaction(versionedTx, {
+      skipPreflight: true,
+    });
     await getTxDetails(provider, sig);
 
     costTracker.track("post authority claim", authority.publicKey);
@@ -191,6 +194,7 @@ describe("PDAs", async () => {
     try {
       const createTokenClaimTx = await tokenClaim.getClaimInstruction(
         provider.connection,
+        campaignId,
         authority.publicKey,
         setupResult.mint,
         receiver.publicKey,
@@ -220,7 +224,7 @@ describe("PDAs", async () => {
 
   it("Should have claimed status Claimed", async () => {
     const tx = await program.methods
-      .claimStatus(new anchor.BN(0))
+      .claimStatus(new anchor.BN(campaignId), new anchor.BN(0))
       .accounts({
         authority: authority.publicKey,
         tokenClaims: tokenClaimsPDA,
@@ -237,7 +241,7 @@ describe("PDAs", async () => {
 
   it("Should have claimed status Unclaimed", async () => {
     const tx = await program.methods
-      .claimStatus(new anchor.BN(1))
+      .claimStatus(new anchor.BN(campaignId), new anchor.BN(1))
       .accounts({
         authority: authority.publicKey,
         tokenClaims: tokenClaimsPDA,

@@ -4,8 +4,9 @@ use anchor_lang::prelude::*;
 #[derive(InitSpace)] // automatically calculate the space required for the struct
 pub struct TokenClaims {
     pub authority: Pubkey,
-    pub bitmap: [u8; 512],
+    pub bitmap: [u8; 1024],
     pub bump: u8,
+    pub campaign_id: u64,
 }
 
 impl TokenClaims {

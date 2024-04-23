@@ -6,6 +6,7 @@ use anchor_spl::{
 };
 
 #[derive(Accounts)]
+#[instruction(campaign_id: u64)]
 pub struct RequestClaimToken<'info> {
     authority: Signer<'info>,
 
@@ -15,6 +16,7 @@ pub struct RequestClaimToken<'info> {
         mut,
         seeds = [
             TokenClaims::SEED_PREFIX,
+            campaign_id.to_le_bytes().as_ref(),
             authority.key().as_ref(),
         ],
         bump = token_claims.bump,
@@ -43,8 +45,8 @@ pub struct RequestClaimToken<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn claim_token(ctx: Context<RequestClaimToken>, nonce: u64, amount: u64) -> Result<()> {
-   
+pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64, amount: u64) -> Result<()> {
+
     if ctx.accounts.token_claims.authority != *ctx.accounts.authority.key {
         return Err(TokenClaimError::Unauthorized.into());
     }
@@ -56,8 +58,11 @@ pub fn claim_token(ctx: Context<RequestClaimToken>, nonce: u64, amount: u64) -> 
 
     token_claims.set_nonce_claimed(nonce);
 
+    let campaign_id_bytes = campaign_id.to_le_bytes();
+
     let signer_seeds: [&[&[u8]]; 1] = [&[
         TokenClaims::SEED_PREFIX,
+        campaign_id_bytes.as_ref(),
         &ctx.accounts.authority.key().to_bytes(),
         &[ctx.accounts.token_claims.bump],
     ]];

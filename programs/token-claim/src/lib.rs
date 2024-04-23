@@ -14,15 +14,15 @@ declare_id!("GKjhT8AoKvdvoi6X9U4cKFQo4RCFNotSwvhzDm8FwA6t");
 pub mod token_claim {
     use super::*;
 
-    pub fn create_token_claims(ctx: Context<CreateTokenClaims>) -> Result<()> {
-        create::create_token_claims(ctx)
+    pub fn create_token_claims(ctx: Context<CreateTokenClaims>, campaign_id: u64) -> Result<()> {
+        create::create_token_claims(ctx, campaign_id)
     }
 
-    pub fn claim_token(ctx: Context<RequestClaimToken>, nonce: u64, amount: u64) -> Result<()> {
-        claim::claim_token(ctx, nonce, amount)
+    pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64, amount: u64) -> Result<()> {
+        claim::claim_token(ctx, campaign_id, nonce, amount)
     }
 
-    pub fn claim_status(ctx: Context<RequestClaimStatus>, nonce: u64) -> Result<ClaimStatusResult> {
-        claim_status::claim_status(ctx, nonce)
+    pub fn claim_status(ctx: Context<RequestClaimStatus>, campaign_id: u64, nonce: u64) -> Result<ClaimStatusResult> {
+        claim_status::claim_status(ctx, campaign_id, nonce)
     }
 }
