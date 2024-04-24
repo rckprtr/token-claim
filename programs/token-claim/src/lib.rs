@@ -8,7 +8,7 @@ use instructions::*;
 pub mod instructions;
 pub mod state;
 
-declare_id!("GKjhT8AoKvdvoi6X9U4cKFQo4RCFNotSwvhzDm8FwA6t");
+declare_id!("aiqoZjBUJu4UthkVzrijLEzSnQphe4TsuExVe5TrTbT");
 
 #[program]
 pub mod token_claim {

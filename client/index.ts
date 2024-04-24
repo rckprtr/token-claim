@@ -1,6 +1,6 @@
 import idl from "./token_claim.json";
 import { PublicKey, Transaction, Connection } from "@solana/web3.js";
-import { Program, Idl } from "@coral-xyz/anchor";
+import { Program, Idl, Provider } from "@coral-xyz/anchor";
 import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
@@ -9,36 +9,36 @@ import {
   getMint,
 } from "@solana/spl-token";
 import { BN } from "bn.js";
+import * as borsh from "borsh";
 
 export const TOKEN_CLAIMS_SEED = "token_claims";
 
 export class TokenClaim {
   public program: Program<Idl>;
-  constructor() {
-    this.program = new Program(idl as Idl);
+  constructor(provider?: Provider) {
+    this.program = new Program(idl as Idl, provider);
   }
 
-  createTokenClaimPDA(campaignId: number, authority: PublicKey): PublicKey {
-
+  getTokenClaimPDA(campaignId: number, authority: PublicKey): PublicKey {
     let campaignIdBuffer = Buffer.alloc(8);
     campaignIdBuffer.writeBigUInt64LE(BigInt(campaignId));
 
     const [tokenClaimsPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from(TOKEN_CLAIMS_SEED), 
-        campaignIdBuffer,
-        authority.toBuffer()
-      ],
+      [Buffer.from(TOKEN_CLAIMS_SEED), campaignIdBuffer, authority.toBuffer()],
       this.program.programId
     );
     return tokenClaimsPDA;
   }
 
-  async getCreateInstruction(campaignId: number, authority: PublicKey): Promise<Transaction> {
+  async getCreateInstruction(
+    campaignId: number,
+    authority: PublicKey
+  ): Promise<Transaction> {
     return await this.program.methods
       .createTokenClaims(new BN(campaignId))
       .accounts({
         authority: authority,
-        tokenClaims: this.createTokenClaimPDA(campaignId, authority),
+        tokenClaims: this.getTokenClaimPDA(campaignId, authority),
       })
       .transaction();
   }
@@ -53,7 +53,7 @@ export class TokenClaim {
   ): Promise<Transaction> {
     const mint = await getMint(connection, mintAddress);
 
-    const tokenClaimPDA = this.createTokenClaimPDA(campaignId, authority);
+    const tokenClaimPDA = this.getTokenClaimPDA(campaignId, authority);
 
     let fromAta = await getAssociatedTokenAddress(
       mintAddress, // token
@@ -62,7 +62,8 @@ export class TokenClaim {
 
     let receiverAta = await getAssociatedTokenAddress(
       mintAddress, // token
-      tokenClaimPDA // owner
+      tokenClaimPDA, // owner
+      true
     );
 
     let transaction = new Transaction();
@@ -103,7 +104,7 @@ export class TokenClaim {
     nonce: number,
     amount: number
   ): Promise<Transaction> {
-    const tokenClaimPDA = this.createTokenClaimPDA(campaignId, authority);
+    const tokenClaimPDA = this.getTokenClaimPDA(campaignId, authority);
 
     const receiverAta = await getAssociatedTokenAddress(mintAddress, receiver);
 
@@ -144,5 +145,29 @@ export class TokenClaim {
     );
 
     return transaction;
+  }
+
+  async isTokenAccountInitialized(
+    connection: Connection,
+    campaignId: number,
+    authority: PublicKey
+  ) {
+    const tokenClaimPDA = this.getTokenClaimPDA(campaignId, authority);
+    console.log("Token claim PDA", tokenClaimPDA.toString());
+    let nameAccount = await connection.getAccountInfo(tokenClaimPDA, "processed");
+    if(nameAccount) {
+      const reader = new borsh.BinaryReader(nameAccount.data);
+      const discriminator = reader.readU64();
+      console.log("Discriminator", BigInt(discriminator.toString()));
+      const publicKey = reader.readFixedArray(32);
+      const bitmap = reader.readFixedArray(512);
+      console.log("Bitmap", bitmap);
+      const bump = reader.readU8();
+      console.log("Bump", bump);
+      const campaignIdRead = BigInt(reader.readU64().toString());
+      console.log("Campaign ID", campaignIdRead);
+      console.log(new PublicKey(publicKey).toString());
+    }
+    return nameAccount !== null;
   }
 }

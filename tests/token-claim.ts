@@ -78,6 +78,7 @@ describe("PDAs", async () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const payer = provider.wallet as anchor.Wallet;
+  console.log("Payer", payer.publicKey.toString());
   const program = anchor.workspace.TokenClaim as anchor.Program<TokenClaim>;
 
   const receiver = anchor.web3.Keypair.generate();
@@ -86,10 +87,12 @@ describe("PDAs", async () => {
   const campaignId = 0;
 
   const tokenClaim = new TokenClaimClient();
-  const tokenClaimsPDA = tokenClaim.createTokenClaimPDA(campaignId, authority.publicKey);
+  const tokenClaimsPDA = tokenClaim.getTokenClaimPDA(
+    campaignId,
+    authority.publicKey
+  );
 
   const costTracker = new CostTracker(provider.connection);
-
 
   before(async () => {
     let sig = await provider.connection.requestAirdrop(
@@ -136,7 +139,7 @@ describe("PDAs", async () => {
     await getTxDetails(provider, mintSig);
 
     return {
-      mint
+      mint,
     };
   };
 
@@ -163,7 +166,6 @@ describe("PDAs", async () => {
   });
 
   it("Claims token and try reclaim", async () => {
-  
     let setupResult = await setup();
 
     costTracker.track("pre receiver claim", receiver.publicKey);
