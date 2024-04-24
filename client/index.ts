@@ -156,17 +156,17 @@ export class TokenClaim {
     console.log("Token claim PDA", tokenClaimPDA.toString());
     let nameAccount = await connection.getAccountInfo(tokenClaimPDA, "processed");
     if(nameAccount) {
-      const reader = new borsh.BinaryReader(nameAccount.data);
-      const discriminator = reader.readU64();
-      console.log("Discriminator", BigInt(discriminator.toString()));
-      const publicKey = reader.readFixedArray(32);
-      const bitmap = reader.readFixedArray(512);
-      console.log("Bitmap", bitmap);
-      const bump = reader.readU8();
-      console.log("Bump", bump);
-      const campaignIdRead = BigInt(reader.readU64().toString());
-      console.log("Campaign ID", campaignIdRead);
-      console.log(new PublicKey(publicKey).toString());
+      // const reader = new borsh.BinaryReader(nameAccount.data);
+      // const discriminator = reader.readU64();
+      // console.log("Discriminator", BigInt(discriminator.toString()));
+      // const publicKey = reader.readFixedArray(32);
+      // const bitmap = reader.readFixedArray(512);
+      // console.log("Bitmap", bitmap);
+      // const bump = reader.readU8();
+      // console.log("Bump", bump);
+      // const campaignIdRead = BigInt(reader.readU64().toString());
+      // console.log("Campaign ID", campaignIdRead);
+      // console.log(new PublicKey(publicKey).toString());
     }
     return nameAccount !== null;
   }
