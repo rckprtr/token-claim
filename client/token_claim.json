@@ -8,72 +8,6 @@
   },
   "instructions": [
     {
-      "name": "claim_status",
-      "discriminator": [
-        163,
-        116,
-        227,
-        12,
-        82,
-        242,
-        47,
-        132
-      ],
-      "accounts": [
-        {
-          "name": "authority"
-        },
-        {
-          "name": "token_claims",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  107,
-                  101,
-                  110,
-                  95,
-                  99,
-                  108,
-                  97,
-                  105,
-                  109,
-                  115
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "campaign_id"
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
-        }
-      ],
-      "args": [
-        {
-          "name": "campaign_id",
-          "type": "u64"
-        },
-        {
-          "name": "nonce",
-          "type": "u64"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "ClaimStatusResult"
-        }
-      }
-    },
-    {
       "name": "claim_token",
       "discriminator": [
         116,
@@ -261,20 +195,6 @@
     }
   ],
   "types": [
-    {
-      "name": "ClaimStatusResult",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Claimed"
-          },
-          {
-            "name": "Unclaimed"
-          }
-        ]
-      }
-    },
     {
       "name": "TokenClaims",
       "type": {

@@ -1,5 +1,10 @@
 import idl from "./token_claim.json";
-import { PublicKey, Transaction, Connection } from "@solana/web3.js";
+import {
+  PublicKey,
+  Transaction,
+  Connection,
+  Commitment,
+} from "@solana/web3.js";
 import { Program, Idl, Provider } from "@coral-xyz/anchor";
 import {
   createAssociatedTokenAccountInstruction,
@@ -9,9 +14,10 @@ import {
   getMint,
 } from "@solana/spl-token";
 import { BN } from "bn.js";
-import * as borsh from "borsh";
+import { TokenClaimsAccount } from "./token_claims_account";
 
 export const TOKEN_CLAIMS_SEED = "token_claims";
+const DEFAULT_COMMITMENT: Commitment = "confirmed";
 
 export class TokenClaim {
   public program: Program<Idl>;
@@ -150,24 +156,34 @@ export class TokenClaim {
   async isTokenAccountInitialized(
     connection: Connection,
     campaignId: number,
-    authority: PublicKey
+    authority: PublicKey,
+    commitment: Commitment = DEFAULT_COMMITMENT
   ) {
     const tokenClaimPDA = this.getTokenClaimPDA(campaignId, authority);
     console.log("Token claim PDA", tokenClaimPDA.toString());
-    let nameAccount = await connection.getAccountInfo(tokenClaimPDA, "processed");
-    if(nameAccount) {
-      // const reader = new borsh.BinaryReader(nameAccount.data);
-      // const discriminator = reader.readU64();
-      // console.log("Discriminator", BigInt(discriminator.toString()));
-      // const publicKey = reader.readFixedArray(32);
-      // const bitmap = reader.readFixedArray(512);
-      // console.log("Bitmap", bitmap);
-      // const bump = reader.readU8();
-      // console.log("Bump", bump);
-      // const campaignIdRead = BigInt(reader.readU64().toString());
-      // console.log("Campaign ID", campaignIdRead);
-      // console.log(new PublicKey(publicKey).toString());
-    }
+    let nameAccount = await connection.getAccountInfo(
+      tokenClaimPDA,
+      commitment
+    );
     return nameAccount !== null;
+  }
+
+  async getTokenAccount(
+    connection: Connection,
+    campaignId: number,
+    authority: PublicKey,
+    commitment: Commitment = DEFAULT_COMMITMENT
+  ) {
+    const tokenClaimPDA = this.getTokenClaimPDA(campaignId, authority);
+    const tokenAccount = await connection.getAccountInfo(
+      tokenClaimPDA,
+      commitment
+    );
+    if (!tokenAccount) {
+      return null;
+    }
+
+    let tokenClaimAccount = TokenClaimsAccount.fromBuffer(tokenAccount?.data);
+    return tokenClaimAccount;
   }
 }

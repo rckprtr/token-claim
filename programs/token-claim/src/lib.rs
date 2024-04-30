@@ -21,8 +21,4 @@ pub mod token_claim {
     pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64, amount: u64) -> Result<()> {
         claim::claim_token(ctx, campaign_id, nonce, amount)
     }
-
-    pub fn claim_status(ctx: Context<RequestClaimStatus>, campaign_id: u64, nonce: u64) -> Result<ClaimStatusResult> {
-        claim_status::claim_status(ctx, campaign_id, nonce)
-    }
 }

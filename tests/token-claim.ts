@@ -1,90 +1,21 @@
 import * as anchor from "@coral-xyz/anchor";
-import { TokenClaim } from "../target/types/token_claim";
-import {
-  createMint,
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-} from "@solana/spl-token";
-import {
-  PublicKey,
-  LAMPORTS_PER_SOL,
-  Transaction,
-  TransactionMessage,
-  VersionedTransaction,
-} from "@solana/web3.js";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { assert } from "chai";
-import * as borsh from "borsh";
-import { CostTracker } from "./util";
-import { ClaimStatusResult } from "../client/types";
+import { CostTracker, buildVersionedTx, getTxDetails, setupMint } from "./util";
 import { TokenClaim as TokenClaimClient } from "../client";
-
-type TokenClaimSetup = {
-  mint: PublicKey;
-};
-
-function convertToClaimStatusResult(claimStatus: number): ClaimStatusResult {
-  return claimStatus === 0
-    ? ClaimStatusResult.Claimed
-    : ClaimStatusResult.Unclaimed;
-}
-
-const getReturnLog = (confirmedTransaction) => {
-  const prefix = "Program return: ";
-  let log = confirmedTransaction.meta.logMessages.find((log) =>
-    log.startsWith(prefix)
-  );
-  log = log.slice(prefix.length);
-  const [key, data] = log.split(" ", 2);
-  const buffer = Buffer.from(data, "base64");
-  return [key, data, buffer];
-};
-
-const buildVersionedTx = async (
-  connection,
-  payer: PublicKey,
-  tx: Transaction
-) => {
-  const blockHash = (await connection.getLatestBlockhash("processed"))
-    .blockhash;
-
-  let messageV0 = new TransactionMessage({
-    payerKey: payer,
-    recentBlockhash: blockHash,
-    instructions: tx.instructions,
-  }).compileToV0Message();
-
-  return new VersionedTransaction(messageV0);
-};
-
-const getTxDetails = async (provider, sig) => {
-  const connection = provider.connection;
-  const latestBlockHash = await connection.getLatestBlockhash();
-  await connection.confirmTransaction(
-    {
-      blockhash: latestBlockHash.blockhash,
-      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-      signature: sig,
-    },
-    "confirmed"
-  );
-
-  return await provider.connection.getTransaction(sig, {
-    maxSupportedTransactionVersion: 0,
-    commitment: "confirmed",
-  });
-};
 
 describe("PDAs", async () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const payer = provider.wallet as anchor.Wallet;
   console.log("Payer", payer.publicKey.toString());
-  const program = anchor.workspace.TokenClaim as anchor.Program<TokenClaim>;
 
   const receiver = anchor.web3.Keypair.generate();
   const authority = anchor.web3.Keypair.generate();
 
-  const campaignId = 0;
+  const campaignId = 23;
+  const claimNonce = 899;
+  const highestNonce = 1023 * 8;
 
   const tokenClaim = new TokenClaimClient();
   const tokenClaimsPDA = tokenClaim.getTokenClaimPDA(
@@ -100,48 +31,15 @@ describe("PDAs", async () => {
       LAMPORTS_PER_SOL
     );
 
-    await getTxDetails(provider, sig);
+    await getTxDetails(provider.connection, sig);
 
     sig = await provider.connection.requestAirdrop(
       authority.publicKey,
       LAMPORTS_PER_SOL * 5
     );
 
-    await getTxDetails(provider, sig);
+    await getTxDetails(provider.connection, sig);
   });
-
-  const setup = async (): Promise<TokenClaimSetup> => {
-    const mint = await createMint(
-      provider.connection,
-      payer.payer,
-      payer.publicKey,
-      null,
-      6
-    );
-
-    const tokensClaimPDAAta = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      authority,
-      mint,
-      tokenClaimsPDA,
-      true
-    );
-
-    let mintSig = await mintTo(
-      provider.connection,
-      payer.payer,
-      mint,
-      tokensClaimPDAAta.address,
-      payer.payer,
-      100
-    );
-
-    await getTxDetails(provider, mintSig);
-
-    return {
-      mint,
-    };
-  };
 
   it("Create the token claim PDA", async () => {
     costTracker.track("pre authority create", authority.publicKey);
@@ -160,13 +58,18 @@ describe("PDAs", async () => {
     versionedTx.sign([authority]);
 
     let sig = await provider.connection.sendTransaction(versionedTx);
-    await getTxDetails(provider, sig);
+    await getTxDetails(provider.connection, sig);
 
     await costTracker.track("post authority create", authority.publicKey);
   });
 
   it("Claims token and try reclaim", async () => {
-    let setupResult = await setup();
+    let setupResult = await setupMint(
+      provider.connection,
+      tokenClaimsPDA,
+      authority,
+      payer.payer
+    );
 
     costTracker.track("pre receiver claim", receiver.publicKey);
     costTracker.track("pre authority claim", authority.publicKey);
@@ -177,7 +80,7 @@ describe("PDAs", async () => {
       authority.publicKey,
       setupResult.mint,
       receiver.publicKey,
-      0,
+      claimNonce,
       1
     );
 
@@ -191,7 +94,7 @@ describe("PDAs", async () => {
     let sig = await provider.connection.sendTransaction(versionedTx, {
       skipPreflight: true,
     });
-    await getTxDetails(provider, sig);
+    await getTxDetails(provider.connection, sig);
 
     costTracker.track("post authority claim", authority.publicKey);
     costTracker.track("post receiver claim", receiver.publicKey);
@@ -203,7 +106,7 @@ describe("PDAs", async () => {
         authority.publicKey,
         setupResult.mint,
         receiver.publicKey,
-        0,
+        claimNonce,
         1
       );
 
@@ -218,47 +121,149 @@ describe("PDAs", async () => {
         skipPreflight: true,
       });
 
-      await getTxDetails(provider, sig);
+      await getTxDetails(provider.connection, sig);
     } catch (_err) {
       console.log(_err);
       const err: anchor.ProgramError = _err;
       assert.strictEqual(err.msg, "Nonce Claimed: Token already claimed");
       assert.strictEqual(err.code, 6000);
     }
+
+    const createTokenClaimHighestTx = await tokenClaim.getClaimInstruction(
+      provider.connection,
+      campaignId,
+      authority.publicKey,
+      setupResult.mint,
+      receiver.publicKey,
+      highestNonce,
+      1
+    );
+
+    let versionedHighestTx = await buildVersionedTx(
+      provider.connection,
+      receiver.publicKey,
+      createTokenClaimHighestTx
+    );
+    versionedHighestTx.sign([receiver, authority]);
+
+    let sigHighest = await provider.connection.sendTransaction(
+      versionedHighestTx,
+      {
+        skipPreflight: true,
+      }
+    );
+    await getTxDetails(provider.connection, sigHighest);
+
+    const tokenClaimAccount = await tokenClaim.getTokenAccount(
+      provider.connection,
+      campaignId,
+      authority.publicKey
+    );
+
+    if (tokenClaimAccount === null) {
+      assert.fail(`Token claim account not found at nonce ${highestNonce}`);
+    } else {
+      assert.strictEqual(
+        tokenClaimAccount.isNonceClaimed(highestNonce),
+        true,
+        `Nonce ${highestNonce} not claimed`
+      );
+    }
   });
 
-  it("Should have claimed status Claimed", async () => {
-    const tx = await program.methods
-      .claimStatus(new anchor.BN(campaignId), new anchor.BN(0))
-      .accounts({
-        authority: authority.publicKey,
-        tokenClaims: tokenClaimsPDA,
-      })
-      .rpc();
+  //Full test - uncomment to run, takes awhile
+  // it("Claims a token under all nonces", async () => {
+  //   const fullClaimCampaignId = 24;
 
-    const txDetails = await getTxDetails(provider, tx);
+  //   const allTokenClaimsPDA = tokenClaim.getTokenClaimPDA(
+  //     fullClaimCampaignId,
+  //     authority.publicKey
+  //   );
+  //   let setupResult = await setupMint(
+  //     provider.connection,
+  //     allTokenClaimsPDA,
+  //     authority,
+  //     payer.payer
+  //   );
 
-    let [key, data, buffer] = getReturnLog(txDetails);
-    const reader = new borsh.BinaryReader(buffer).readU8();
-    let status = convertToClaimStatusResult(reader);
-    assert.strictEqual(status, ClaimStatusResult.Claimed);
-  });
+  //   let createTokenClaimAccountTx = await tokenClaim.getCreateInstruction(
+  //     fullClaimCampaignId,
+  //     authority.publicKey
+  //   );
 
-  it("Should have claimed status Unclaimed", async () => {
-    const tx = await program.methods
-      .claimStatus(new anchor.BN(campaignId), new anchor.BN(1))
-      .accounts({
-        authority: authority.publicKey,
-        tokenClaims: tokenClaimsPDA,
-      })
-      .rpc();
+  //   let versionedCreateTx = await buildVersionedTx(
+  //     provider.connection,
+  //     authority.publicKey,
+  //     createTokenClaimAccountTx
+  //   );
 
-    const txDetails = await getTxDetails(provider, tx);
+  //   versionedCreateTx.sign([authority]);
 
-    let [key, data, buffer] = getReturnLog(txDetails);
-    const reader = new borsh.BinaryReader(buffer).readU8();
-    let status = convertToClaimStatusResult(reader);
-    assert.strictEqual(status, ClaimStatusResult.Unclaimed);
+  //   let sigCreate = await provider.connection.sendTransaction(
+  //     versionedCreateTx
+  //   );
+  //   await getTxDetails(provider.connection, sigCreate);
+
+  //   for (let i = 0; i < highestNonce; i++) {
+  //     const createTokenClaimTx = await tokenClaim.getClaimInstruction(
+  //       provider.connection,
+  //       fullClaimCampaignId,
+  //       authority.publicKey,
+  //       setupResult.mint,
+  //       receiver.publicKey,
+  //       i,
+  //       1
+  //     );
+
+  //     let versionedTx = await buildVersionedTx(
+  //       provider.connection,
+  //       receiver.publicKey,
+  //       createTokenClaimTx
+  //     );
+  //     versionedTx.sign([receiver, authority]);
+
+  //     let sig = await provider.connection.sendTransaction(versionedTx, {
+  //       skipPreflight: true,
+  //     });
+  //     await getTxDetails(provider.connection, sig);
+
+  //     const tokenClaimAccount = await tokenClaim.getTokenAccount(
+  //       provider.connection,
+  //       fullClaimCampaignId,
+  //       authority.publicKey
+  //     );
+
+  //     if (tokenClaimAccount === null) {
+  //       assert.fail(`Token claim account not found at nonce ${i}`);
+  //     } else {
+  //       assert.strictEqual(
+  //         tokenClaimAccount.isNonceClaimed(i),
+  //         true,
+  //         `Nonce ${i} not claimed`
+  //       );
+  //     }
+  //     console.log(`Nonce ${i} claimed`);
+  //   }
+  // });
+
+  it("Deserializes account data", async () => {
+    const tokenClaimAccount = await tokenClaim.getTokenAccount(
+      provider.connection,
+      campaignId,
+      authority.publicKey
+    );
+
+    if (tokenClaimAccount === null) {
+      assert.fail("Token claim account not found");
+    } else {
+      assert.strictEqual(
+        tokenClaimAccount.authority.toString(),
+        authority.publicKey.toString()
+      );
+      assert.strictEqual(tokenClaimAccount.campaignId, BigInt(campaignId));
+      assert.strictEqual(tokenClaimAccount.bitmap.length, 1024);
+      assert.strictEqual(tokenClaimAccount.isNonceClaimed(claimNonce), true);
+    }
   });
 
   after(() => {

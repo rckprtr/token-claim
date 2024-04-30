@@ -309,7 +309,7 @@ async function transferAllUSDCAndCloseATA(
       receiverAta, // from
       authorityAta, // to
       receiverKey.publicKey, // from's owner
-      Number(usdBalanceTokenAmount.value.amount) //amount
+      Number(usdBalanceTokenAmount?.value.amount) //amount
     )
   );
 

@@ -121,7 +121,7 @@ export const buildVersionedTx = async (
 export const getTxDetails = async (
   connection: Connection,
   sig: string
-): Promise<VersionedTransactionResponse> => {
+): Promise<VersionedTransactionResponse | null> => {
   const latestBlockHash = await connection.getLatestBlockhash();
   await connection.confirmTransaction(
     {
