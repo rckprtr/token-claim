@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import {
+  TOKEN_2022_PROGRAM_ID,
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
@@ -51,6 +52,53 @@ export class CostTracker {
     }
   }
 }
+
+export const setupMintTokenExtension = async (
+  connection: anchor.web3.Connection,
+  tokenClaimPDA: PublicKey,
+  authority: Signer,
+  payer: Signer
+): Promise<TokenClaimSetup> => {
+  const mint = await createMint(
+    connection,
+    payer,
+    payer.publicKey,
+    null,
+    6,
+    undefined,
+    undefined,
+    TOKEN_2022_PROGRAM_ID
+  );
+
+  const tokensClaimPDAAta = await getOrCreateAssociatedTokenAccount(
+    connection,
+    authority,
+    mint,
+    tokenClaimPDA,
+    true,
+    undefined,
+    undefined,
+    TOKEN_2022_PROGRAM_ID
+  );
+
+  let mintSig = await mintTo(
+    connection,
+    payer,
+    mint,
+    tokensClaimPDAAta.address,
+    payer,
+    100000,
+    [],
+    undefined,
+    TOKEN_2022_PROGRAM_ID
+  );
+
+  await getTxDetails(connection, mintSig);
+
+  return {
+    mint,
+  };
+};
 
 export const setupMint = async (
   connection: anchor.web3.Connection,

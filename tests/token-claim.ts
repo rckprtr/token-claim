@@ -3,6 +3,7 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { assert } from "chai";
 import { CostTracker, buildVersionedTx, getTxDetails, setupMint } from "./util";
 import { TokenClaim as TokenClaimClient } from "../client";
+import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
 
 describe("PDAs", async () => {
   const provider = anchor.AnchorProvider.env();
@@ -44,6 +45,13 @@ describe("PDAs", async () => {
   it("Create the token claim PDA", async () => {
     costTracker.track("pre authority create", authority.publicKey);
 
+    let createdEvent = tokenClaim.addEventListener(
+      'tokenClaimsCreatedEvent',
+      (event, slot, signature) => {
+        tokenClaim.removeEventListener(createdEvent);
+      }
+    );
+
     const createTokenClaimTx = await tokenClaim.getCreateInstruction(
       campaignId,
       authority.publicKey
@@ -74,6 +82,13 @@ describe("PDAs", async () => {
     costTracker.track("pre receiver claim", receiver.publicKey);
     costTracker.track("pre authority claim", authority.publicKey);
 
+    let claimEvent = tokenClaim.addEventListener(
+      'tokenClaimedEvent',
+      (event, slot, signature) => {
+        tokenClaim.removeEventListener(claimEvent);
+      }
+    );
+
     const createTokenClaimTx = await tokenClaim.getClaimInstruction(
       provider.connection,
       campaignId,
@@ -95,6 +110,14 @@ describe("PDAs", async () => {
       skipPreflight: true,
     });
     await getTxDetails(provider.connection, sig);
+
+    const receiverAta = await getAssociatedTokenAddress(setupResult.mint, receiver.publicKey);
+    const tokenAccountInfo = await getAccount(
+      provider.connection,
+      receiverAta
+    );
+
+    assert.strictEqual(tokenAccountInfo.amount, 1n, "Account balance of receiver is 1");
 
     costTracker.track("post authority claim", authority.publicKey);
     costTracker.track("post receiver claim", receiver.publicKey);

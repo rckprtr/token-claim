@@ -45,6 +45,16 @@ pub struct RequestClaimToken<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct TokenClaimedEvent {
+    pub authority: Pubkey,
+    pub mint: Pubkey,
+    #[index]
+    pub campaign_id: u64,
+    pub nonce: u64,
+    pub amount: u64,
+}
+
 pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64, amount: u64) -> Result<()> {
 
     if ctx.accounts.token_claims.authority != *ctx.accounts.authority.key {
@@ -81,6 +91,14 @@ pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64
         amount,
         ctx.accounts.mint.decimals
     )?;
+
+    emit!(TokenClaimedEvent {
+        authority: *ctx.accounts.authority.key,
+        mint: ctx.accounts.mint.key(),
+        campaign_id,
+        nonce,
+        amount,
+    });
 
     Ok(())
 }
