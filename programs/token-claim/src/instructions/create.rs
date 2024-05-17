@@ -22,12 +22,23 @@ pub struct CreateTokenClaims<'info> {
     system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct TokenClaimsCreatedEvent {
+    pub authority: Pubkey,
+    pub campaign_id: u64,
+}
+
 pub fn create_token_claims(ctx: Context<CreateTokenClaims>, campaign_id: u64) -> Result<()> {
     let token_claims = &mut ctx.accounts.token_claims;
     token_claims.authority = *ctx.accounts.authority.key;
     token_claims.bitmap = [0; 1024];
     token_claims.bump = ctx.bumps.token_claims;
     token_claims.campaign_id = campaign_id;
+
+    emit!(TokenClaimsCreatedEvent {
+        authority: *ctx.accounts.authority.key,
+        campaign_id,
+    });
     
     Ok(())
 }

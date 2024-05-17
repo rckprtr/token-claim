@@ -182,6 +182,34 @@
       ]
     }
   ],
+  "events": [
+    {
+      "name": "TokenClaimedEvent",
+      "discriminator": [
+        125,
+        110,
+        65,
+        37,
+        231,
+        49,
+        204,
+        99
+      ]
+    },
+    {
+      "name": "TokenClaimsCreatedEvent",
+      "discriminator": [
+        159,
+        142,
+        55,
+        225,
+        49,
+        15,
+        237,
+        80
+      ]
+    }
+  ],
   "errors": [
     {
       "code": 6000,
@@ -195,6 +223,34 @@
     }
   ],
   "types": [
+    {
+      "name": "TokenClaimedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "campaign_id",
+            "type": "u64"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
     {
       "name": "TokenClaims",
       "type": {
@@ -216,6 +272,22 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "campaign_id",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenClaimsCreatedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
           },
           {
             "name": "campaign_id",
