@@ -16,6 +16,7 @@ export function toTokenClaimedEvent(
 ): TokenClaimedEvent {
   return {
     authority: new PublicKey(event.authority.toString()),
+    receiver: new PublicKey(event.receiver.toString()),
     mint: new PublicKey(event.mint.toString()),
     campaignId: BigInt(event.campaignId),
     nonce: Number(event.nonce),

@@ -21,4 +21,8 @@ pub mod token_claim {
     pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64, amount: u64) -> Result<()> {
         claim::claim_token(ctx, campaign_id, nonce, amount)
     }
+
+    pub fn withdraw_token(ctx: Context<WithdrawToken>, campaign_id: u64, amount: u64) -> Result<()> {
+        withdraw::withdraw_token(ctx, campaign_id, amount)
+    }
 }
