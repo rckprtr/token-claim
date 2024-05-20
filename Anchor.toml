@@ -11,6 +11,9 @@ token_claim = "aiqoZjBUJu4UthkVzrijLEzSnQphe4TsuExVe5TrTbT"
 [programs.localnet]
 token_claim = "aiqoZjBUJu4UthkVzrijLEzSnQphe4TsuExVe5TrTbT"
 
+[programs.mainnet]
+token_claim = "aiqoZjBUJu4UthkVzrijLEzSnQphe4TsuExVe5TrTbT"
+
 [registry]
 url = "https://api.apr.dev"
 

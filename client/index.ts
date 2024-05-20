@@ -256,4 +256,48 @@ export class TokenClaim {
       account: tokenAccountInfo,
     };
   }
+
+
+  async withdrawToken(
+    connection: Connection,
+    campaignId: number,
+    authority: PublicKey,
+    receiver: PublicKey,
+    mintAddress: PublicKey,
+    amount: number,
+  ) {
+    const tokenClaimPDA = this.getTokenClaimPDA(campaignId, authority);
+    const tokenClaimPDAATA = await getAssociatedTokenAddress(mintAddress, tokenClaimPDA, true);
+    const receiverAta = await getAssociatedTokenAddress(mintAddress, receiver, false);
+
+    let transaction = new Transaction();
+
+    try {
+      await getAccount(connection, receiverAta);
+    } catch (e) {
+      transaction.add(
+        createAssociatedTokenAccountInstruction(
+          authority,
+          receiverAta,
+          receiver,
+          mintAddress
+        )
+      );
+    }
+
+    transaction.add(
+      await this.program.methods
+      .withdrawToken(new BN(campaignId), new BN(amount))
+      .accounts({
+        authority: authority,
+        receiver: receiver,
+        tokenClaims: tokenClaimPDA,
+        mint: mintAddress,
+        tokenClaimsTokenAccount: tokenClaimPDAATA,
+        receiverTokenAccount: receiverAta,
+      })
+      .transaction()
+    );
+    return transaction;
+  }
 }

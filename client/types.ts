@@ -28,6 +28,7 @@ export type TokenClaimsCreatedEvent = {
 
 export type TokenClaimedEvent = {
   authority: PublicKey;
+  receiver: PublicKey;
   mint: PublicKey;
   campaignId: number | bigint;
   nonce: number;

@@ -7,4 +7,6 @@ pub enum TokenClaimError {
     NonceAlreadyClaimed,
     #[msg("Unauthorized: User is not the authority")]
     Unauthorized,
+    #[msg("Insufficient Funds: Not enough tokens")]
+    InsufficientFunds
 }

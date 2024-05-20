@@ -57,7 +57,8 @@ export const setupMintTokenExtension = async (
   connection: anchor.web3.Connection,
   tokenClaimPDA: PublicKey,
   authority: Signer,
-  payer: Signer
+  payer: Signer,
+  amount: number
 ): Promise<TokenClaimSetup> => {
   const mint = await createMint(
     connection,
@@ -87,7 +88,7 @@ export const setupMintTokenExtension = async (
     mint,
     tokensClaimPDAAta.address,
     payer,
-    100000,
+    amount,
     [],
     undefined,
     TOKEN_2022_PROGRAM_ID
@@ -104,7 +105,8 @@ export const setupMint = async (
   connection: anchor.web3.Connection,
   tokenClaimPDA: PublicKey,
   authority: Signer,
-  payer: Signer
+  payer: Signer,
+  amount: number
 ): Promise<TokenClaimSetup> => {
   const mint = await createMint(connection, payer, payer.publicKey, null, 6);
 
@@ -122,7 +124,7 @@ export const setupMint = async (
     mint,
     tokensClaimPDAAta.address,
     payer,
-    100000
+    amount
   );
 
   await getTxDetails(connection, mintSig);
@@ -181,3 +183,17 @@ export const getTxDetails = async (connection: anchor.web3.Connection, sig) => {
     commitment: "confirmed",
   });
 };
+
+export const airdropHelper = async (
+  connection: anchor.web3.Connection,
+  receiver: PublicKey,
+  amount: number
+) => {
+  return await getTxDetails(
+    connection,
+    await connection.requestAirdrop(
+      receiver,
+      LAMPORTS_PER_SOL
+    )
+  );
+}

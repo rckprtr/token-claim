@@ -7,10 +7,8 @@ use anchor_spl::{
 
 #[derive(Accounts)]
 #[instruction(campaign_id: u64)]
-pub struct RequestClaimToken<'info> {
+pub struct WithdrawToken<'info> {
     authority: Signer<'info>,
-
-    receiver: Signer<'info>,
 
     #[account(
         mut,
@@ -32,11 +30,7 @@ pub struct RequestClaimToken<'info> {
     )]
     pub token_claims_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(
-        mut,
-        associated_token::mint = mint,
-        associated_token::authority = receiver,
-    )]
+    #[account(mut)]
     pub receiver_token_account: Box<Account<'info, TokenAccount>>,
 
     /// Solana ecosystem accounts
@@ -46,18 +40,16 @@ pub struct RequestClaimToken<'info> {
 }
 
 #[event]
-pub struct TokenClaimedEvent {
+pub struct TokenWithdrawnEvent {
     pub authority: Pubkey,
-    pub receiver: Pubkey,
     pub mint: Pubkey,
     #[index]
     pub campaign_id: u64,
-    pub nonce: u64,
     pub amount: u64,
 }
 
-pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64, amount: u64) -> Result<()> {
 
+pub fn withdraw_token(ctx: Context<WithdrawToken>, campaign_id: u64, amount: u64) -> Result<()> {
     if ctx.accounts.token_claims.authority != *ctx.accounts.authority.key {
         return Err(TokenClaimError::Unauthorized.into());
     }
@@ -65,13 +57,6 @@ pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64
     if ctx.accounts.token_claims_token_account.amount < amount {
         return Err(TokenClaimError::InsufficientFunds.into());
     }
-
-    let token_claims = &mut ctx.accounts.token_claims;
-    if token_claims.is_nonce_claimed(nonce) {
-        return Err(TokenClaimError::NonceAlreadyClaimed.into());
-    }
-
-    token_claims.set_nonce_claimed(nonce);
 
     let campaign_id_bytes = campaign_id.to_le_bytes();
 
@@ -97,12 +82,10 @@ pub fn claim_token(ctx: Context<RequestClaimToken>, campaign_id: u64, nonce: u64
         ctx.accounts.mint.decimals
     )?;
 
-    emit!(TokenClaimedEvent {
+    emit!(TokenWithdrawnEvent {
         authority: *ctx.accounts.authority.key,
-        receiver: *ctx.accounts.receiver.key,
         mint: ctx.accounts.mint.key(),
         campaign_id,
-        nonce,
         amount,
     });
 
