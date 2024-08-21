@@ -279,79 +279,80 @@ describe("PDAs", async () => {
   });
 
   //Full test - uncomment to run, takes awhile
-  // it("Claims a token under all nonces", async () => {
-  //   const fullClaimCampaignId = 24;
+  it("Claims a token under all nonces", async () => {
+    const fullClaimCampaignId = 24;
 
-  //   const allTokenClaimsPDA = tokenClaim.getTokenClaimPDA(
-  //     fullClaimCampaignId,
-  //     authority.publicKey
-  //   );
-  //   let setupResult = await setupMint(
-  //     provider.connection,
-  //     allTokenClaimsPDA,
-  //     authority,
-  //     payer.payer
-  //   );
+    const allTokenClaimsPDA = tokenClaim.getTokenClaimPDA(
+      fullClaimCampaignId,
+      authority.publicKey
+    );
+    let setupResult = await setupMint(
+      provider.connection,
+      allTokenClaimsPDA,
+      authority,
+      payer.payer,
+      highestNonce
+    );
 
-  //   let createTokenClaimAccountTx = await tokenClaim.getCreateInstruction(
-  //     fullClaimCampaignId,
-  //     authority.publicKey
-  //   );
+    let createTokenClaimAccountTx = await tokenClaim.getCreateInstruction(
+      fullClaimCampaignId,
+      authority.publicKey
+    );
 
-  //   let versionedCreateTx = await buildVersionedTx(
-  //     provider.connection,
-  //     authority.publicKey,
-  //     createTokenClaimAccountTx
-  //   );
+    let versionedCreateTx = await buildVersionedTx(
+      provider.connection,
+      authority.publicKey,
+      createTokenClaimAccountTx
+    );
 
-  //   versionedCreateTx.sign([authority]);
+    versionedCreateTx.sign([authority]);
 
-  //   let sigCreate = await provider.connection.sendTransaction(
-  //     versionedCreateTx
-  //   );
-  //   await getTxDetails(provider.connection, sigCreate);
+    let sigCreate = await provider.connection.sendTransaction(
+      versionedCreateTx
+    );
+    await getTxDetails(provider.connection, sigCreate);
 
-  //   for (let i = 0; i < highestNonce; i++) {
-  //     const createTokenClaimTx = await tokenClaim.getClaimInstruction(
-  //       provider.connection,
-  //       fullClaimCampaignId,
-  //       authority.publicKey,
-  //       setupResult.mint,
-  //       receiver.publicKey,
-  //       i,
-  //       1
-  //     );
+    for (let i = 0; i < highestNonce; i++) {
+      const createTokenClaimTx = await tokenClaim.getClaimInstruction(
+        provider.connection,
+        fullClaimCampaignId,
+        authority.publicKey,
+        setupResult.mint,
+        receiver.publicKey,
+        i,
+        1
+      );
 
-  //     let versionedTx = await buildVersionedTx(
-  //       provider.connection,
-  //       receiver.publicKey,
-  //       createTokenClaimTx
-  //     );
-  //     versionedTx.sign([receiver, authority]);
+      let versionedTx = await buildVersionedTx(
+        provider.connection,
+        receiver.publicKey,
+        createTokenClaimTx
+      );
+      versionedTx.sign([receiver, authority]);
 
-  //     let sig = await provider.connection.sendTransaction(versionedTx, {
-  //       skipPreflight: true,
-  //     });
-  //     await getTxDetails(provider.connection, sig);
+      let sig = await provider.connection.sendTransaction(versionedTx, {
+        skipPreflight: true,
+      });
+      await getTxDetails(provider.connection, sig);
 
-  //     const tokenClaimAccount = await tokenClaim.getTokenAccount(
-  //       provider.connection,
-  //       fullClaimCampaignId,
-  //       authority.publicKey
-  //     );
+      const tokenClaimAccount = await tokenClaim.getTokenAccount(
+        provider.connection,
+        fullClaimCampaignId,
+        authority.publicKey
+      );
 
-  //     if (tokenClaimAccount === null) {
-  //       assert.fail(`Token claim account not found at nonce ${i}`);
-  //     } else {
-  //       assert.strictEqual(
-  //         tokenClaimAccount.isNonceClaimed(i),
-  //         true,
-  //         `Nonce ${i} not claimed`
-  //       );
-  //     }
-  //     console.log(`Nonce ${i} claimed`);
-  //   }
-  // });
+      if (tokenClaimAccount === null) {
+        assert.fail(`Token claim account not found at nonce ${i}`);
+      } else {
+        assert.strictEqual(
+          tokenClaimAccount.isNonceClaimed(i),
+          true,
+          `Nonce ${i} not claimed`
+        );
+      }
+      console.log(`Nonce ${i} claimed`);
+    }
+  });
 
   it("Deserializes account data", async () => {
     const tokenClaimAccount = await tokenClaim.getTokenAccount(

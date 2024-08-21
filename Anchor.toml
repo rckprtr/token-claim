@@ -4,7 +4,6 @@
 resolution = true
 skip-lint = false
 
-
 [programs.devnet]
 token_claim = "aiqoZjBUJu4UthkVzrijLEzSnQphe4TsuExVe5TrTbT"
 
@@ -19,7 +18,7 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet = "~/.config/solana/id.json"
+wallet = ".keys/deploy.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
