@@ -2,7 +2,7 @@ use crate::{state::TokenClaims, TokenClaimError};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, Mint, Token, TokenAccount, TransferChecked},
+    token_interface::{self as token, Mint, TokenInterface, TokenAccount, TransferChecked}
 };
 
 #[derive(Accounts)]
@@ -23,24 +23,24 @@ pub struct RequestClaimToken<'info> {
     )]
     token_claims: Account<'info, TokenClaims>,
 
-    mint: Box<Account<'info, Mint>>,
+    mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = token_claims,
     )]
-    pub token_claims_token_account: Box<Account<'info, TokenAccount>>,
+    pub token_claims_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = receiver,
     )]
-    pub receiver_token_account: Box<Account<'info, TokenAccount>>,
+    pub receiver_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// Solana ecosystem accounts
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }

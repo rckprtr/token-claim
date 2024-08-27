@@ -290,7 +290,8 @@ describe("PDAs", async () => {
   //     provider.connection,
   //     allTokenClaimsPDA,
   //     authority,
-  //     payer.payer
+  //     payer.payer,
+  //     highestNonce
   //   );
 
   //   let createTokenClaimAccountTx = await tokenClaim.getCreateInstruction(

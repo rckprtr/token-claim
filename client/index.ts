@@ -257,7 +257,6 @@ export class TokenClaim {
     };
   }
 
-
   async withdrawToken(
     connection: Connection,
     campaignId: number,
